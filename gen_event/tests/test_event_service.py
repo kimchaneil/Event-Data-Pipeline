@@ -3,7 +3,12 @@
 from datetime import datetime, timedelta, timezone
 import unittest
 
-from gen_event.producer.event_service import build_event_time, build_page_view_event, build_purchase_event, build_random_events
+from gen_event.producer.event_service import (
+    build_event_time,
+    build_page_view_event,
+    build_purchase_event,
+    build_random_events,
+)
 
 
 class EventServiceTest(unittest.TestCase):

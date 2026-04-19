@@ -10,9 +10,11 @@ import uuid
 
 
 PRODUCTS = [
-    {"product_id": "SKU-1001", "product_name": "Classic White T-Shirt", "price": 29.0},
-    {"product_id": "SKU-1002", "product_name": "Daily Denim Pants", "price": 59.0},
-    {"product_id": "SKU-1003", "product_name": "Running Sneakers", "price": 129.0},
+    {"product_id": "SKU-1001", "product_name": "Python Backend Bootcamp", "price": 79.0},
+    {"product_id": "SKU-1002", "product_name": "SQL Analytics Starter", "price": 49.0},
+    {"product_id": "SKU-1003", "product_name": "FastAPI Practical Project", "price": 89.0},
+    {"product_id": "SKU-1004", "product_name": "Data Pipeline Masterclass", "price": 129.0},
+    {"product_id": "SKU-1005", "product_name": "Streamlit Dashboard Lab", "price": 59.0},
 ]
 
 USERS = ["user-101", "user-102", "user-103", "user-104"]
@@ -46,7 +48,6 @@ def build_event_time() -> str:
         microsecond=0,
     )
     return event_time.isoformat()
-
 
 def build_page_view_event() -> dict:
     product = random.choice(PRODUCTS)
