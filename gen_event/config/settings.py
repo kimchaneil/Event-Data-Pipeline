@@ -22,4 +22,8 @@ def get_settings() -> dict[str, str | int]:
         "postgres_table": os.getenv("POSTGRES_TABLE", "event_logs"),
         "event_log_path": os.getenv("EVENT_LOG_PATH", str(base_dir / "data" / "events.jsonl")),
         "random_batch_size": int(os.getenv("RANDOM_BATCH_SIZE", "50")),
+        "auto_generate_enabled": os.getenv("AUTO_GENERATE_ENABLED", "true").lower() == "true",
+        "auto_generate_batch_size": int(os.getenv("AUTO_GENERATE_BATCH_SIZE", "50")),
+        "postgres_connect_retries": int(os.getenv("POSTGRES_CONNECT_RETRIES", "30")),
+        "postgres_connect_retry_seconds": int(os.getenv("POSTGRES_CONNECT_RETRY_SECONDS", "2")),
     }

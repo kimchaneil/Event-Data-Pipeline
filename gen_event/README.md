@@ -8,10 +8,12 @@
 
 - FastAPI 기반 이벤트 생성 API
 - Streamlit 기반 이벤트 생성 UI
+- Docker 기반 앱 + DB 통합 실행
 - `page_view` 이벤트 생성
 - `purchase` 이벤트 생성
 - 랜덤 이벤트 배치 생성
 - 생성된 이벤트를 PostgreSQL에 컬럼 단위로 저장
+- 백엔드 시작 시 초기 이벤트 자동 생성 및 PostgreSQL 저장
 
 ## 이벤트 시나리오
 
@@ -55,7 +57,6 @@
 ```text
 gen_event/
 ├── config/
-├── docker/
 ├── producer/
 ├── storage/
 ├── visualization/
@@ -63,13 +64,51 @@ gen_event/
 ├── tests/
 ├── .env.example
 ├── README.md
-├── docker-compose.yml
 └── requirements.txt
+```
+
+```text
+liveklass/
+├── docker/
+├── Dockerfile
+├── .dockerignore
+└── docker-compose.yml
 ```
 
 ## 실행 방법
 
-### 1. 가상환경 생성
+### 1. Docker로 전체 실행
+
+앱과 DB를 함께 실행하려면 아래 명령만 실행하면 됩니다.
+
+```powershell
+docker compose up --build -d
+```
+
+실행 후 동작은 다음과 같습니다.
+
+- PostgreSQL 컨테이너가 `event_logs` 테이블을 자동 생성합니다.
+- FastAPI 컨테이너가 기동될 때 초기 랜덤 이벤트 50건을 생성합니다.
+- 생성된 이벤트는 PostgreSQL에 자동 저장됩니다.
+- Streamlit 컨테이너는 화면만 띄우고, 실제 데이터 적재는 백엔드가 담당합니다.
+
+접속 주소:
+
+- FastAPI: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- Streamlit: [http://127.0.0.1:8501](http://127.0.0.1:8501)
+- PostgreSQL(host): `127.0.0.1:55432`
+
+중지:
+
+```powershell
+docker compose down
+```
+
+### 2. 로컬 실행
+
+기존처럼 API와 프론트를 각각 로컬에서 실행할 수도 있습니다.
+
+### 2-1. 가상환경 생성
 
 ```powershell
 cd {프로젝트_루트}
@@ -77,19 +116,19 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 2. 패키지 설치
+### 2-2. 패키지 설치
 
 ```powershell
 pip install -r gen_event/requirements.txt
 ```
 
-### 3. 환경 변수 파일 준비
+### 2-3. 환경 변수 파일 준비
 
 ```powershell
 Copy-Item gen_event/.env.example gen_event/.env
 ```
 
-### 4. PostgreSQL 실행
+### 2-4. PostgreSQL 실행
 
 이 프로젝트는 Docker 기반 PostgreSQL을 사용합니다.
 
@@ -97,10 +136,10 @@ Copy-Item gen_event/.env.example gen_event/.env
 이 PC에서는 `5432` 포트를 다른 프로세스가 이미 사용 중일 수 있으므로, 필요한 경우 `gen_event/.env`에서 `POSTGRES_PORT=55432`처럼 변경해서 사용합니다.
 
 ```powershell
-docker compose -f gen_event/docker-compose.yml up -d
+docker compose up -d postgres
 ```
 
-### 5. FastAPI 실행
+### 2-5. FastAPI 실행
 
 ```powershell
 python -m gen_event.scripts.run_api
@@ -108,7 +147,7 @@ python -m gen_event.scripts.run_api
 
 백엔드는 기본적으로 [http://127.0.0.1:8000](http://127.0.0.1:8000) 에서 실행됩니다.
 
-### 6. Streamlit 실행
+### 2-6. Streamlit 실행
 
 새 터미널에서 아래 명령을 실행합니다.
 
@@ -119,7 +158,7 @@ python -m gen_event.scripts.run_streamlit
 
 프론트엔드는 기본적으로 [http://127.0.0.1:8501](http://127.0.0.1:8501) 에서 실행됩니다.
 
-### 7. 화면 사용
+### 2-7. 화면 사용
 
 - `Page View 1건 생성`
 - `Purchase 1건 생성`
@@ -129,10 +168,11 @@ python -m gen_event.scripts.run_streamlit
 
 - `page_view`는 단건 생성 가능
 - `purchase`는 단건 생성 가능
-- 랜덤 배치 생성은 기본 10건
+- 랜덤 배치 생성은 기본 50건
 - 배치 생성 시 `page_view`가 `purchase`보다 더 자주 나오도록 구성
 - `event_time`은 최근 7일 범위 안에서 랜덤하게 생성
 - 시간대는 점심(12~13시), 저녁(20~23시)에 더 많이 발생하도록 가중치 적용
+- 백엔드 시작 시 초기 데이터 50건을 1회 생성하고 이후에는 추가 적재하지 않음
 
 ## 저장 방식
 

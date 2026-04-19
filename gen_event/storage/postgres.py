@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import time
 from psycopg import connect
 from psycopg.connection import Connection
 import uuid
@@ -23,6 +24,35 @@ def build_dsn() -> str:
 
 def get_connection() -> Connection:
     return connect(build_dsn())
+
+
+def wait_for_connection(max_attempts: int | None = None, delay_seconds: int | None = None) -> None:
+    settings = get_settings()
+    attempts = max_attempts or int(settings["postgres_connect_retries"])
+    delay = delay_seconds or int(settings["postgres_connect_retry_seconds"])
+
+    for attempt in range(1, attempts + 1):
+        try:
+            with get_connection() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT 1")
+            return
+        except Exception:
+            if attempt == attempts:
+                raise
+            time.sleep(delay)
+
+
+def count_events() -> int:
+    settings = get_settings()
+    query = f"SELECT COUNT(*) FROM {settings['postgres_table']}"
+
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            result = cursor.fetchone()
+
+    return int(result[0]) if result else 0
 
 
 def insert_event(event: dict) -> None:
