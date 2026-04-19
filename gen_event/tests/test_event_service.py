@@ -5,6 +5,8 @@ from unittest.mock import patch
 import unittest
 
 from gen_event.producer.event_service import (
+    PRODUCT_PURCHASE_RATE_MULTIPLIERS,
+    PRODUCT_VIEW_WEIGHTS,
     REFERRER_PURCHASE_RATES,
     build_event_time,
     build_page_view_event,
@@ -66,6 +68,26 @@ class EventServiceTest(unittest.TestCase):
     def test_referrer_purchase_rates_are_defined_for_all_referrers(self) -> None:
         page_view = build_page_view_event()
         self.assertIn(page_view["referrer"], REFERRER_PURCHASE_RATES)
+
+    def test_product_weights_and_purchase_rates_are_defined(self) -> None:
+        page_view = build_page_view_event()
+        self.assertIn(page_view["product_id"], PRODUCT_VIEW_WEIGHTS)
+        self.assertIn(page_view["product_id"], PRODUCT_PURCHASE_RATE_MULTIPLIERS)
+
+    def test_should_convert_to_purchase_uses_product_multiplier(self) -> None:
+        high_conversion_event = build_page_view_event()
+        high_conversion_event["referrer"] = "search"
+        high_conversion_event["product_id"] = "SKU-1004"
+
+        low_conversion_event = build_page_view_event()
+        low_conversion_event["referrer"] = "search"
+        low_conversion_event["product_id"] = "SKU-1002"
+
+        with patch("gen_event.producer.event_service.random.random", return_value=0.22):
+            self.assertTrue(should_convert_to_purchase(high_conversion_event))
+
+        with patch("gen_event.producer.event_service.random.random", return_value=0.22):
+            self.assertFalse(should_convert_to_purchase(low_conversion_event))
 
 
 if __name__ == "__main__":

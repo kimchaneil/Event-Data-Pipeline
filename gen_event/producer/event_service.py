@@ -16,6 +16,20 @@ PRODUCTS = [
     {"product_id": "SKU-1004", "product_name": "Data Pipeline Masterclass", "price": 129.0},
     {"product_id": "SKU-1005", "product_name": "Streamlit Dashboard Lab", "price": 59.0},
 ]
+PRODUCT_VIEW_WEIGHTS = {
+    "SKU-1001": 5,
+    "SKU-1002": 4,
+    "SKU-1003": 3,
+    "SKU-1004": 2,
+    "SKU-1005": 4,
+}
+PRODUCT_PURCHASE_RATE_MULTIPLIERS = {
+    "SKU-1001": 0.90,
+    "SKU-1002": 0.70,
+    "SKU-1003": 1.10,
+    "SKU-1004": 1.45,
+    "SKU-1005": 1.20,
+}
 
 USERS = ["user-101", "user-102", "user-103", "user-104"]
 REFERRERS = ["direct", "search", "email", "social"]
@@ -69,8 +83,19 @@ def choose_referrer() -> str:
         k=1,
     )[0]
 
+
+def choose_product() -> dict:
+    product_ids = [product["product_id"] for product in PRODUCTS]
+    chosen_product_id = random.choices(
+        population=product_ids,
+        weights=[PRODUCT_VIEW_WEIGHTS[product_id] for product_id in product_ids],
+        k=1,
+    )[0]
+    return next(product for product in PRODUCTS if product["product_id"] == chosen_product_id)
+
+
 def build_page_view_event() -> dict:
-    product = random.choice(PRODUCTS)
+    product = choose_product()
     return {
         "event_id": str(uuid.uuid4()),
         "event_type": "page_view",
@@ -126,7 +151,10 @@ def build_purchase_time(page_view_time: str) -> str:
 
 def should_convert_to_purchase(page_view_event: dict) -> bool:
     referrer = page_view_event["referrer"]
+    product_id = page_view_event["product_id"]
     purchase_rate = REFERRER_PURCHASE_RATES.get(referrer, 0.1)
+    purchase_rate *= PRODUCT_PURCHASE_RATE_MULTIPLIERS.get(product_id, 1.0)
+    purchase_rate = min(purchase_rate, 0.95)
     return random.random() < purchase_rate
 
 
