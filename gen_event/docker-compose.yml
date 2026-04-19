@@ -1,12 +1,10 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
     container_name: gen-event-postgres
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-55432}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-commerce_events}
       POSTGRES_USER: ${POSTGRES_USER:-commerce_admin}
@@ -14,6 +12,56 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-commerce_admin} -d ${POSTGRES_DB:-commerce_events}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: gen_event/Dockerfile
+    container_name: gen-event-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-commerce_events}
+      POSTGRES_USER: ${POSTGRES_USER:-commerce_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-commerce_password}
+      POSTGRES_TABLE: ${POSTGRES_TABLE:-event_logs}
+      RANDOM_BATCH_SIZE: ${RANDOM_BATCH_SIZE:-50}
+      AUTO_GENERATE_ENABLED: ${AUTO_GENERATE_ENABLED:-true}
+      AUTO_GENERATE_BATCH_SIZE: ${AUTO_GENERATE_BATCH_SIZE:-50}
+      POSTGRES_CONNECT_RETRIES: ${POSTGRES_CONNECT_RETRIES:-30}
+      POSTGRES_CONNECT_RETRY_SECONDS: ${POSTGRES_CONNECT_RETRY_SECONDS:-2}
+    command: ["python", "-m", "gen_event.scripts.run_api"]
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: gen_event/Dockerfile
+    container_name: gen-event-frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_started
+    environment:
+      STREAMLIT_HOST: 0.0.0.0
+      STREAMLIT_PORT: 8501
+      API_BASE_URL: http://api:8000
+      RANDOM_BATCH_SIZE: ${RANDOM_BATCH_SIZE:-50}
+    command: ["python", "-m", "gen_event.scripts.run_streamlit"]
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
 
 volumes:
   postgres_data:
