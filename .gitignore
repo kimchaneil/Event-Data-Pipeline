@@ -12,6 +12,9 @@ env/
 # Environment files
 .env
 .env.*
+!.env.example
+data/
+gen_event/data/
 
 # Tooling and test caches
 .pytest_cache/
