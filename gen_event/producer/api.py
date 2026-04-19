@@ -5,8 +5,8 @@ from __future__ import annotations
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from gen_event.config.settings import get_settings
-from gen_event.producer.event_service import append_events, build_page_view_event, build_purchase_event, build_random_events
+from gen_event.producer.event_service import build_page_view_event, build_purchase_event, build_random_events
+from gen_event.storage.postgres import insert_event, insert_events
 
 
 app = FastAPI(title="Commerce Event API")
@@ -23,25 +23,22 @@ def health() -> dict[str, str]:
 
 @app.post("/events/page-view")
 def create_page_view() -> dict:
-    settings = get_settings()
     event = build_page_view_event()
-    append_events(str(settings["event_log_path"]), [event])
+    insert_event(event)
     return {"message": "page_view event created", "event": event}
 
 
 @app.post("/events/purchase")
 def create_purchase() -> dict:
-    settings = get_settings()
     event = build_purchase_event()
-    append_events(str(settings["event_log_path"]), [event])
+    insert_event(event)
     return {"message": "purchase event created", "event": event}
 
 
 @app.post("/events/random")
 def create_random_events(request: RandomEventRequest) -> dict:
-    settings = get_settings()
     events = build_random_events(request.count)
-    append_events(str(settings["event_log_path"]), events)
+    insert_events(events)
     return {
         "message": f"{request.count} events created",
         "count": request.count,
