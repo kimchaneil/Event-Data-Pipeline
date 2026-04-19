@@ -19,6 +19,18 @@ PRODUCTS = [
 
 USERS = ["user-101", "user-102", "user-103", "user-104"]
 REFERRERS = ["direct", "search", "email", "social"]
+REFERRER_VIEW_WEIGHTS = {
+    "direct": 2,
+    "search": 5,
+    "email": 1,
+    "social": 4,
+}
+REFERRER_PURCHASE_RATES = {
+    "direct": 0.45,
+    "search": 0.18,
+    "email": 0.35,
+    "social": 0.08,
+}
 DEVICES = ["mobile", "desktop", "tablet"]
 PAYMENT_METHODS = ["card", "bank_transfer", "simple_pay"]
 PEAK_HOURS = [12, 13, 20, 21, 22]
@@ -49,6 +61,14 @@ def build_event_time() -> str:
     )
     return event_time.isoformat()
 
+
+def choose_referrer() -> str:
+    return random.choices(
+        population=list(REFERRER_VIEW_WEIGHTS.keys()),
+        weights=list(REFERRER_VIEW_WEIGHTS.values()),
+        k=1,
+    )[0]
+
 def build_page_view_event() -> dict:
     product = random.choice(PRODUCTS)
     return {
@@ -60,20 +80,33 @@ def build_page_view_event() -> dict:
         "page_url": f"/products/{product['product_id']}",
         "product_id": product["product_id"],
         "product_name": product["product_name"],
-        "referrer": random.choice(REFERRERS),
+        "referrer": choose_referrer(),
         "device_type": random.choice(DEVICES),
     }
 
 
-def build_purchase_event() -> dict:
-    product = random.choice(PRODUCTS)
+def build_purchase_event(source_event: dict | None = None) -> dict:
+    product = random.choice(PRODUCTS) if source_event is None else {
+        "product_id": source_event["product_id"],
+        "product_name": source_event["product_name"],
+        "price": next(item["price"] for item in PRODUCTS if item["product_id"] == source_event["product_id"]),
+    }
     quantity = random.randint(1, 3)
+    event_time = build_event_time()
+    user_id = random.choice(USERS)
+    session_id = f"session-{random.randint(10000, 99999)}"
+
+    if source_event is not None:
+        event_time = build_purchase_time(source_event["event_time"])
+        user_id = source_event["user_id"]
+        session_id = source_event["session_id"]
+
     return {
         "event_id": str(uuid.uuid4()),
         "event_type": "purchase",
-        "event_time": build_event_time(),
-        "user_id": random.choice(USERS),
-        "session_id": f"session-{random.randint(10000, 99999)}",
+        "event_time": event_time,
+        "user_id": user_id,
+        "session_id": session_id,
         "page_url": f"/checkout/{product['product_id']}",
         "product_id": product["product_id"],
         "product_name": product["product_name"],
@@ -84,15 +117,29 @@ def build_purchase_event() -> dict:
     }
 
 
+def build_purchase_time(page_view_time: str) -> str:
+    source_time = datetime.fromisoformat(page_view_time)
+    delay_minutes = random.randint(5, 180)
+    purchase_time = source_time + timedelta(minutes=delay_minutes)
+    return purchase_time.isoformat()
+
+
+def should_convert_to_purchase(page_view_event: dict) -> bool:
+    referrer = page_view_event["referrer"]
+    purchase_rate = REFERRER_PURCHASE_RATES.get(referrer, 0.1)
+    return random.random() < purchase_rate
+
+
 def build_random_events(count: int) -> list[dict]:
     events: list[dict] = []
-    for _ in range(count):
-        event_builder = random.choices(
-            [build_page_view_event, build_purchase_event],
-            weights=[7, 3],
-            k=1,
-        )[0]
-        events.append(event_builder())
+    while len(events) < count:
+        page_view_event = build_page_view_event()
+        events.append(page_view_event)
+        if len(events) >= count:
+            break
+
+        if should_convert_to_purchase(page_view_event):
+            events.append(build_purchase_event(page_view_event))
     return events
 
 
