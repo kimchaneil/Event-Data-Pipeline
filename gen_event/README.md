@@ -91,12 +91,19 @@ docker compose up --build -d
 - FastAPI 컨테이너가 기동될 때 초기 랜덤 이벤트 50건을 생성합니다.
 - 생성된 이벤트는 PostgreSQL에 자동 저장됩니다.
 - Streamlit 컨테이너는 화면만 띄우고, 실제 데이터 적재는 백엔드가 담당합니다.
+- `visual` 컨테이너가 집계 결과를 읽어 차트 PNG 파일을 자동 생성합니다.
 
 접속 주소:
 
 - FastAPI: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 - Streamlit: [http://127.0.0.1:8501](http://127.0.0.1:8501)
 - PostgreSQL(host): `127.0.0.1:55432`
+
+자동 생성 파일:
+
+- `visual/output/product_performance.png`
+- `visual/output/referrer_conversion_rate.png`
+- `visual/output/hourly_event_distribution.png`
 
 중지:
 
@@ -122,18 +129,29 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2-3. 환경 변수 파일 준비
+### 2-3. 환경 변수 설정
+
+현재 로컬 실행 코드는 `gen_event/.env` 파일을 자동으로 읽지 않습니다.  
+따라서 설정이 필요하면 PowerShell 환경 변수로 직접 지정해야 합니다.
+
+예시:
 
 ```powershell
-Copy-Item gen_event/.env.example gen_event/.env
+$env:POSTGRES_HOST='127.0.0.1'
+$env:POSTGRES_PORT='55432'
+$env:POSTGRES_DB='commerce_events'
+$env:POSTGRES_USER='commerce_admin'
+$env:POSTGRES_PASSWORD='commerce_password'
 ```
+
+`gen_event/.env.example`는 설정 예시 문서 용도로만 제공합니다.
 
 ### 2-4. PostgreSQL 실행
 
 이 프로젝트는 Docker 기반 PostgreSQL을 사용합니다.
 
 주의:
-이 PC에서는 `5432` 포트를 다른 프로세스가 이미 사용 중일 수 있으므로, 필요한 경우 `gen_event/.env`에서 `POSTGRES_PORT=55432`처럼 변경해서 사용합니다.
+이 PC에서는 `5432` 포트를 다른 프로세스가 이미 사용 중일 수 있으므로, 호스트에서는 `55432` 포트를 사용합니다.
 
 ```powershell
 docker compose up -d postgres

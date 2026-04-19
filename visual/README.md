@@ -1,6 +1,6 @@
 # Visual
 
-이 디렉토리는 PostgreSQL에 저장된 이벤트 집계 결과를 차트로 시각화하고, 이미지 파일로 저장하는 기능을 관리합니다.
+이 디렉토리는 PostgreSQL에 저장된 이벤트 집계 결과를 차트 이미지로 저장하는 시각화 기능을 관리합니다.
 
 ## 역할
 
@@ -26,8 +26,9 @@ visual/
 시각화 실행 스크립트입니다.
 
 하는 일:
-- PostgreSQL에 연결
-- 집계 쿼리 실행
+- PostgreSQL 연결 대기
+- 초기 이벤트 적재 완료 대기
+- SQL 집계 쿼리 실행
 - `matplotlib`로 차트 생성
 - `visual/output` 아래에 PNG 파일 저장
 
@@ -48,6 +49,22 @@ visual/
 - `product_performance.png`
 - `referrer_conversion_rate.png`
 - `hourly_event_distribution.png`
+
+## 실행 방법
+
+현재 시각화는 별도 수동 실행이 아니라 루트에서 Docker 전체 실행 시 자동으로 수행됩니다.
+
+```powershell
+docker compose up --build -d
+```
+
+실행 후 `visual` 컨테이너가 한 번 실행되고 종료되며, 차트 이미지를 파일로 남깁니다.
+
+## 출력 파일
+
+- `visual/output/product_performance.png`
+- `visual/output/referrer_conversion_rate.png`
+- `visual/output/hourly_event_distribution.png`
 
 ## 출력 차트 설명
 
@@ -78,6 +95,6 @@ visual/
 
 ## 참고 사항
 
-- 시각화 스크립트는 차트를 화면에 띄우지 않고 파일로 저장합니다.
-- 출력 이미지는 실행할 때마다 같은 파일명으로 갱신됩니다.
-- PostgreSQL이 실행 중이지 않거나 `event_logs`가 비어 있으면 차트 생성이 실패하거나 의미 없는 결과가 나올 수 있습니다.
+- 시각화는 화면 출력이 아니라 파일 저장 방식입니다.
+- 출력 이미지는 실행 시 같은 파일명으로 갱신됩니다.
+- `docker compose up` 이후 `gen-event-visual` 컨테이너가 `Exited (0)` 상태면 정상적으로 생성이 끝난 것입니다.

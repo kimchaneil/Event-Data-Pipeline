@@ -63,5 +63,28 @@ services:
     ports:
       - "8501:8501"
 
+  visual:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gen-event-visual
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: commerce_events
+      POSTGRES_USER: commerce_admin
+      POSTGRES_PASSWORD: commerce_password
+      POSTGRES_TABLE: event_logs
+      POSTGRES_CONNECT_RETRIES: 30
+      POSTGRES_CONNECT_RETRY_SECONDS: 2
+    command: ["python", "-m", "visual.generate_charts"]
+    volumes:
+      - ./visual/output:/app/visual/output
+
 volumes:
   postgres_data:

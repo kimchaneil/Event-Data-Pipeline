@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 import matplotlib
@@ -10,7 +11,8 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 
-from gen_event.storage.postgres import get_connection
+from gen_event.config.settings import get_settings
+from gen_event.storage.postgres import count_events, get_connection, wait_for_connection
 from visual.sql_queries import (
     HOURLY_DISTRIBUTION_QUERY,
     PRODUCT_PERFORMANCE_QUERY,
@@ -32,6 +34,21 @@ def fetch_rows(query: str) -> list[dict]:
 def ensure_output_dir() -> Path:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     return OUTPUT_DIR
+
+
+def wait_for_seeded_events() -> None:
+    settings = get_settings()
+    attempts = int(settings["postgres_connect_retries"])
+    delay = int(settings["postgres_connect_retry_seconds"])
+
+    wait_for_connection(max_attempts=attempts, delay_seconds=delay)
+
+    for attempt in range(1, attempts + 1):
+        if count_events() > 0:
+            return
+        if attempt == attempts:
+            raise RuntimeError("event_logs is empty, visualization cannot be generated yet")
+        time.sleep(delay)
 
 
 def save_product_chart(rows: list[dict], output_dir: Path) -> Path:
@@ -102,6 +119,7 @@ def save_hourly_chart(rows: list[dict], output_dir: Path) -> Path:
 
 
 def main() -> None:
+    wait_for_seeded_events()
     output_dir = ensure_output_dir()
     product_rows = fetch_rows(PRODUCT_PERFORMANCE_QUERY)
     referrer_rows = fetch_rows(REFERRER_PERFORMANCE_QUERY)
