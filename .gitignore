@@ -15,6 +15,7 @@ env/
 !.env.example
 data/
 gen_event/data/
+visual/output/*.png
 
 # Tooling and test caches
 .pytest_cache/
