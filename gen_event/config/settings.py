@@ -15,7 +15,7 @@ def get_settings() -> dict[str, str | int]:
         "streamlit_port": int(os.getenv("STREAMLIT_PORT", "8501")),
         "api_base_url": os.getenv("API_BASE_URL", "http://127.0.0.1:8000"),
         "postgres_host": os.getenv("POSTGRES_HOST", "127.0.0.1"),
-        "postgres_port": int(os.getenv("POSTGRES_PORT", "5432")),
+        "postgres_port": int(os.getenv("POSTGRES_PORT", "55432")),
         "postgres_db": os.getenv("POSTGRES_DB", "commerce_events"),
         "postgres_user": os.getenv("POSTGRES_USER", "commerce_admin"),
         "postgres_password": os.getenv("POSTGRES_PASSWORD", "commerce_password"),

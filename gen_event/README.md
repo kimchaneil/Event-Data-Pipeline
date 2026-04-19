@@ -131,20 +131,10 @@ pip install -r requirements.txt
 
 ### 2-3. 환경 변수 설정
 
-현재 로컬 실행 코드는 `gen_event/.env` 파일을 자동으로 읽지 않습니다.  
-따라서 설정이 필요하면 PowerShell 환경 변수로 직접 지정해야 합니다.
+현재 로컬 실행 기본값은 호스트 PostgreSQL 포트 `55432`를 사용합니다.  
+따라서 일반적인 로컬 실행에서는 별도 포트 설정 없이 바로 실행할 수 있습니다.
 
-예시:
-
-```powershell
-$env:POSTGRES_HOST='127.0.0.1'
-$env:POSTGRES_PORT='55432'
-$env:POSTGRES_DB='commerce_events'
-$env:POSTGRES_USER='commerce_admin'
-$env:POSTGRES_PASSWORD='commerce_password'
-```
-
-`gen_event/.env.example`는 설정 예시 문서 용도로만 제공합니다.
+`gen_event/.env.example`는 설정 예시 문서 용도로만 제공합니다. 현재 코드는 `.env` 파일을 자동으로 읽지 않습니다.
 
 ### 2-4. PostgreSQL 실행
 

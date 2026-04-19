@@ -44,6 +44,47 @@ docker compose up --build -d
 - `visual/output/referrer_conversion_rate.png`
 - `visual/output/hourly_event_distribution.png`
 
+# PostgreSQL 포트 안내
+Docker Compose 기준 PostgreSQL은 컨테이너 내부에서는 `5432`를 사용하고, 호스트에서는 `55432`로 노출됩니다.
+
+즉:
+- 컨테이너 내부 서비스 간 통신: `5432`
+- Windows/Linux 호스트에서 직접 접속할 때: `55432`
+
+## Windows
+
+현재 코드 기본값은 이미 `55432`를 사용하므로, 일반적인 로컬 실행에서는 별도 설정 없이 동작합니다.
+
+PowerShell에서 다른 포트로 바꾸고 싶을 때만 아래처럼 설정합니다.
+
+```powershell
+$env:POSTGRES_PORT='55432'
+```
+
+예:
+
+```powershell
+$env:POSTGRES_PORT='55432'
+python -m visual.generate_charts
+```
+
+## Linux
+
+bash/zsh에서도 기본적으로 추가 설정 없이 동작합니다.
+
+다른 포트로 바꾸고 싶을 때만 아래처럼 설정합니다.
+
+```bash
+export POSTGRES_PORT=55432
+```
+
+예:
+
+```bash
+export POSTGRES_PORT=55432
+python -m visual.generate_charts
+```
+
 # Docker 설정 안내
 - `docker-compose.yml`에 포함된 PostgreSQL 계정, 비밀번호, 포트는 과제 제출 및 로컬 재현을 위한 예제 실행값입니다.
 - 이 값들은 채점자가 별도 환경 설정 없이 바로 `docker compose up`으로 실행할 수 있도록 문서화된 기본값입니다.
