@@ -186,6 +186,132 @@ CREATE TABLE IF NOT EXISTS event_logs (
 이 구조는 단일 테이블을 사용하되 이벤트 종류별로 필요한 필드만 채우는 방식입니다.  
 예를 들어 `page_view`에서는 `quantity`, `price`, `payment_method`가 `NULL`이고, `purchase`에서는 `referrer`, `device_type`이 `NULL`일 수 있습니다.
 
+## 데이터 집계 분석
+
+### 분석 기준 1. 상품별 조회수 / 구매수 / 전환율
+
+이 분석은 상품별 성과를 조회, 구매, 전환율 기준으로 함께 파악하기 위해 선택하였습니다.
+
+조회 수만으로는 상품의 성과를 판단하기 어렵고, 구매 수만으로는 관심 대비 효율을 파악하기 어렵습니다. 따라서 상품별 `page_view`와 `purchase`를 함께 집계하고, 조회 대비 구매 전환율을 계산하여 어떤 상품이 실제 구매로 잘 이어지는지 확인합니다.
+
+또한 현재 시뮬레이션에서는 상품별 조회 가중치와 상품별 구매 전환 차등이 포함되어 있기 때문에, 이 분석을 통해 설계한 시뮬레이션 규칙이 실제 데이터에 반영되었는지 확인할 수 있습니다.
+
+```sql
+WITH latest_product_names AS (
+    SELECT DISTINCT ON (product_id)
+        product_id,
+        product_name
+    FROM event_logs
+    ORDER BY product_id, event_time DESC, id DESC
+),
+page_views AS (
+    SELECT
+        product_id,
+        COUNT(*) AS page_view_count
+    FROM event_logs
+    WHERE event_type = 'page_view'
+    GROUP BY product_id
+),
+purchases AS (
+    SELECT
+        product_id,
+        COUNT(*) AS purchase_count
+    FROM event_logs
+    WHERE event_type = 'purchase'
+    GROUP BY product_id
+)
+SELECT
+    COALESCE(pv.product_id, p.product_id) AS product_id,
+    lpn.product_name,
+    COALESCE(pv.page_view_count, 0) AS page_view_count,
+    COALESCE(p.purchase_count, 0) AS purchase_count,
+    ROUND(
+        COALESCE(p.purchase_count, 0)::numeric
+        / NULLIF(COALESCE(pv.page_view_count, 0), 0) * 100,
+        2
+    ) AS conversion_rate_percent
+FROM page_views pv
+FULL OUTER JOIN purchases p
+    ON pv.product_id = p.product_id
+LEFT JOIN latest_product_names lpn
+    ON lpn.product_id = COALESCE(pv.product_id, p.product_id)
+ORDER BY conversion_rate_percent DESC NULLS LAST, page_view_count DESC;
+```
+
+### 분석 기준 2. 유입 경로별 조회 성과 및 구매 전환율
+
+이 분석은 유입 경로별 마케팅 성과 차이를 확인하기 위해 선택하였습니다.
+
+같은 수의 조회를 만들더라도 실제 구매로 이어지는 비율은 유입 경로마다 다를 수 있습니다. 따라서 `referrer` 기준으로 조회 수와 구매 수를 함께 보고, 조회 대비 구매 전환율을 계산하여 어떤 유입 경로가 효율적인지 확인합니다.
+
+현재 시뮬레이션에서는 `direct`, `search`, `email`, `social`별 조회 가중치와 전환율 차등이 포함되어 있으므로, 이 분석은 경로 기반 구매 전환 규칙이 실제 집계 결과에 반영되는지를 확인하는 용도로 적합합니다.
+
+```sql
+WITH purchase_source AS (
+    SELECT DISTINCT ON (p.id)
+        p.id AS purchase_id,
+        pv.referrer
+    FROM event_logs p
+    JOIN event_logs pv
+      ON p.user_id = pv.user_id
+     AND p.session_id = pv.session_id
+     AND p.product_id = pv.product_id
+    WHERE p.event_type = 'purchase'
+      AND pv.event_type = 'page_view'
+      AND pv.referrer IS NOT NULL
+      AND pv.event_time <= p.event_time
+    ORDER BY p.id, pv.event_time DESC, pv.id DESC
+),
+page_views AS (
+    SELECT
+        referrer,
+        COUNT(*) AS page_view_count
+    FROM event_logs
+    WHERE event_type = 'page_view'
+      AND referrer IS NOT NULL
+    GROUP BY referrer
+),
+purchases AS (
+    SELECT
+        referrer,
+        COUNT(*) AS purchase_count
+    FROM purchase_source
+    GROUP BY referrer
+)
+SELECT
+    pv.referrer,
+    pv.page_view_count,
+    COALESCE(p.purchase_count, 0) AS purchase_count,
+    ROUND(
+        COALESCE(p.purchase_count, 0)::numeric
+        / NULLIF(pv.page_view_count, 0) * 100,
+        2
+    ) AS conversion_rate_percent
+FROM page_views pv
+LEFT JOIN purchases p
+  ON pv.referrer = p.referrer
+ORDER BY conversion_rate_percent DESC, pv.page_view_count DESC;
+```
+
+### 분석 기준 3. 시간대별 이벤트 분포
+
+이 분석은 시간대별 사용자 활동 패턴을 확인하기 위해 선택하였습니다.
+
+서비스 운영 관점에서는 사용자가 언제 많이 유입되고, 언제 구매 행동이 많이 발생하는지 파악하는 것이 중요합니다. 따라서 `event_time`을 기준으로 시간대별 전체 이벤트 수, 조회 수, 구매 수를 함께 집계하여 특정 시간대에 이벤트가 집중되는지 확인합니다.
+
+현재 시뮬레이션에서는 최근 7일 범위와 점심/저녁 시간대 가중치가 반영되어 있으므로, 이 분석을 통해 시간대 랜덤화 규칙이 실제 결과에 반영되었는지 검증할 수 있습니다.
+
+```sql
+SELECT
+    EXTRACT(HOUR FROM event_time)::int AS event_hour,
+    COUNT(*) AS total_events,
+    COUNT(*) FILTER (WHERE event_type = 'page_view') AS page_view_count,
+    COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchase_count
+FROM event_logs
+GROUP BY EXTRACT(HOUR FROM event_time)
+ORDER BY event_hour;
+```
+
 ## 테스트 실행
 
 ```powershell
