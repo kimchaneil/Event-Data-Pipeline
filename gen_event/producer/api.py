@@ -2,18 +2,48 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+from gen_event.config.settings import get_settings
 from gen_event.producer.event_service import build_page_view_event, build_purchase_event, build_random_events
-from gen_event.storage.postgres import insert_event, insert_events
+from gen_event.storage.postgres import count_events, insert_event, insert_events, wait_for_connection
 
 
-app = FastAPI(title="Commerce Event API")
+def _seed_events_once() -> None:
+    settings = get_settings()
+    batch_size = int(settings["auto_generate_batch_size"])
+
+    wait_for_connection()
+    if count_events() > 0:
+        print("event_logs already contains data, skipping startup seed")
+        return
+
+    events = build_random_events(batch_size)
+    insert_events(events)
+    print(f"seeded {len(events)} events into PostgreSQL")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    settings = get_settings()
+
+    if bool(settings["auto_generate_enabled"]):
+        _seed_events_once()
+
+    try:
+        yield
+    finally:
+        return
+
+
+app = FastAPI(title="Commerce Event API", lifespan=lifespan)
 
 
 class RandomEventRequest(BaseModel):
-    count: int = Field(default=10, ge=1, le=100)
+    count: int = Field(default=10, ge=1, le=500)
 
 
 @app.get("/health")

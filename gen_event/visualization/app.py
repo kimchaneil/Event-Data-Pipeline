@@ -30,15 +30,16 @@ def main() -> None:
     st.title("Commerce Event Generator")
     st.write("커머스 데이터 파이프라인용 샘플 이벤트를 생성합니다.")
 
-    st.subheader("구현 의도")
+    st.subheader("구현 구조")
     st.write("- 백엔드: FastAPI")
     st.write("- 프론트엔드: Streamlit")
-    st.write("- 저장 방식: JSONL 파일 적재")
+    st.write("- 저장소: PostgreSQL")
+    st.write("- 자동 적재: 백엔드 시작 시 초기 이벤트 50건 생성 및 저장")
 
     batch_size = st.number_input(
-        "랜덤 생성 건수",
+        "수동 생성 건수",
         min_value=1,
-        max_value=100,
+        max_value=500,
         value=int(settings["random_batch_size"]),
         step=1,
     )
@@ -61,7 +62,7 @@ def main() -> None:
             if st.button("랜덤 이벤트 생성", use_container_width=True):
                 response_data = post_json(f"{api_base_url}/events/random", {"count": int(batch_size)})
     except error.URLError:
-        error_message = "FastAPI 서버에 연결할 수 없습니다. 먼저 백엔드를 실행하세요."
+        error_message = "FastAPI 서버에 연결할 수 없습니다. 백엔드 컨테이너 상태를 먼저 확인하세요."
 
     if error_message:
         st.error(error_message)
