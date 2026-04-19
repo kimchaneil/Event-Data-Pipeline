@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: gen-event-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-commerce_events}
+      POSTGRES_USER: ${POSTGRES_USER:-commerce_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-commerce_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
