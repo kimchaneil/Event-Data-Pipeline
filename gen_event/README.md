@@ -63,8 +63,7 @@ gen_event/
 ├── scripts/
 ├── tests/
 ├── .env.example
-├── README.md
-└── requirements.txt
+└── README.md
 ```
 
 ```text
@@ -72,6 +71,7 @@ liveklass/
 ├── docker/
 ├── Dockerfile
 ├── .dockerignore
+├── requirements.txt
 └── docker-compose.yml
 ```
 
@@ -119,7 +119,7 @@ python -m venv .venv
 ### 2-2. 패키지 설치
 
 ```powershell
-pip install -r gen_event/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 2-3. 환경 변수 파일 준비
