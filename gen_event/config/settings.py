@@ -21,5 +21,5 @@ def get_settings() -> dict[str, str | int]:
         "postgres_password": os.getenv("POSTGRES_PASSWORD", "commerce_password"),
         "postgres_table": os.getenv("POSTGRES_TABLE", "event_logs"),
         "event_log_path": os.getenv("EVENT_LOG_PATH", str(base_dir / "data" / "events.jsonl")),
-        "random_batch_size": int(os.getenv("RANDOM_BATCH_SIZE", "10")),
+        "random_batch_size": int(os.getenv("RANDOM_BATCH_SIZE", "50")),
     }
