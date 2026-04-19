@@ -57,7 +57,6 @@
 ```text
 gen_event/
 ├── config/
-├── docker/
 ├── producer/
 ├── storage/
 ├── visualization/
@@ -65,8 +64,15 @@ gen_event/
 ├── tests/
 ├── .env.example
 ├── README.md
-├── docker-compose.yml
 └── requirements.txt
+```
+
+```text
+liveklass/
+├── docker/
+├── Dockerfile
+├── .dockerignore
+└── docker-compose.yml
 ```
 
 ## 실행 방법
@@ -76,7 +82,7 @@ gen_event/
 앱과 DB를 함께 실행하려면 아래 명령만 실행하면 됩니다.
 
 ```powershell
-docker compose -f gen_event/docker-compose.yml up --build -d
+docker compose up --build -d
 ```
 
 실행 후 동작은 다음과 같습니다.
@@ -95,7 +101,7 @@ docker compose -f gen_event/docker-compose.yml up --build -d
 중지:
 
 ```powershell
-docker compose -f gen_event/docker-compose.yml down
+docker compose down
 ```
 
 ### 2. 로컬 실행
@@ -130,7 +136,7 @@ Copy-Item gen_event/.env.example gen_event/.env
 이 PC에서는 `5432` 포트를 다른 프로세스가 이미 사용 중일 수 있으므로, 필요한 경우 `gen_event/.env`에서 `POSTGRES_PORT=55432`처럼 변경해서 사용합니다.
 
 ```powershell
-docker compose -f gen_event/docker-compose.yml up -d
+docker compose up -d postgres
 ```
 
 ### 2-5. FastAPI 실행
