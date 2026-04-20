@@ -1,19 +1,19 @@
 # Gen Event
 
-이 프로젝트는 커머스 서비스에서 사용할 수 있는 이벤트 생성 기능만 따로 분리해 관리하는 하위 프로젝트입니다.
+이 폴더는 커머스 서비스에서 사용할 수 있는 이벤트 생성 기능만 따로 분리해 관리하는 하위 프로젝트입니다.
 
 현재 구현 범위는 이벤트 생성 페이지입니다. FastAPI 백엔드에서 페이지 조회 이벤트와 구매 이벤트를 랜덤하게 생성하고, Streamlit 프론트엔드에서 이를 호출합니다.
+
+전체 실행 방법과 제출용 요약은 루트 [`README.md`](</C:/Users/diabl/Desktop/김찬일(ChanIl Kim) f313db8811114d9d902ca7fb23904849/liveklass/README.md>)를 참고하고, 이 문서에서는 `gen_event` 내부 로직과 데이터 구조를 설명합니다.
 
 ## 현재 기능
 
 - FastAPI 기반 이벤트 생성 API
 - Streamlit 기반 이벤트 생성 UI
-- Docker 기반 앱 + DB 통합 실행
 - `page_view` 이벤트 생성
 - `purchase` 이벤트 생성
 - 랜덤 이벤트 배치 생성
 - 생성된 이벤트를 PostgreSQL에 컬럼 단위로 저장
-- 백엔드 시작 시 초기 이벤트 자동 생성 및 PostgreSQL 저장
 
 ## 이벤트 시나리오
 
@@ -74,103 +74,6 @@ liveklass/
 ├── requirements.txt
 └── docker-compose.yml
 ```
-
-## 실행 방법
-
-### 1. Docker로 전체 실행
-
-앱과 DB를 함께 실행하려면 아래 명령만 실행하면 됩니다.
-
-```powershell
-docker compose up --build -d
-```
-
-실행 후 동작은 다음과 같습니다.
-
-- PostgreSQL 컨테이너가 `event_logs` 테이블을 자동 생성합니다.
-- FastAPI 컨테이너가 기동될 때 초기 랜덤 이벤트 50건을 생성합니다.
-- 생성된 이벤트는 PostgreSQL에 자동 저장됩니다.
-- Streamlit 컨테이너는 화면만 띄우고, 실제 데이터 적재는 백엔드가 담당합니다.
-- `visual` 컨테이너가 집계 결과를 읽어 차트 PNG 파일을 자동 생성합니다.
-
-접속 주소:
-
-- FastAPI: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- Streamlit: [http://127.0.0.1:8501](http://127.0.0.1:8501)
-- PostgreSQL(host): `127.0.0.1:55432`
-
-자동 생성 파일:
-
-- `visual/output/product_performance.png`
-- `visual/output/referrer_conversion_rate.png`
-- `visual/output/hourly_event_distribution.png`
-
-중지:
-
-```powershell
-docker compose down
-```
-
-### 2. 로컬 실행
-
-기존처럼 API와 프론트를 각각 로컬에서 실행할 수도 있습니다.
-
-### 2-1. 가상환경 생성
-
-```powershell
-cd {프로젝트_루트}
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-### 2-2. 패키지 설치
-
-```powershell
-pip install -r requirements.txt
-```
-
-### 2-3. 환경 변수 설정
-
-현재 로컬 실행 기본값은 호스트 PostgreSQL 포트 `55432`를 사용합니다.  
-따라서 일반적인 로컬 실행에서는 별도 포트 설정 없이 바로 실행할 수 있습니다.
-
-`gen_event/.env.example`는 설정 예시 문서 용도로만 제공합니다. 현재 코드는 `.env` 파일을 자동으로 읽지 않습니다.
-
-### 2-4. PostgreSQL 실행
-
-이 프로젝트는 Docker 기반 PostgreSQL을 사용합니다.
-
-주의:
-이 PC에서는 `5432` 포트를 다른 프로세스가 이미 사용 중일 수 있으므로, 호스트에서는 `55432` 포트를 사용합니다.
-
-```powershell
-docker compose up -d postgres
-```
-
-### 2-5. FastAPI 실행
-
-```powershell
-python -m gen_event.scripts.run_api
-```
-
-백엔드는 기본적으로 [http://127.0.0.1:8000](http://127.0.0.1:8000) 에서 실행됩니다.
-
-### 2-6. Streamlit 실행
-
-새 터미널에서 아래 명령을 실행합니다.
-
-```powershell
-.venv\Scripts\Activate.ps1
-python -m gen_event.scripts.run_streamlit
-```
-
-프론트엔드는 기본적으로 [http://127.0.0.1:8501](http://127.0.0.1:8501) 에서 실행됩니다.
-
-### 2-7. 화면 사용
-
-- `Page View 1건 생성`
-- `Purchase 1건 생성`
-- `랜덤 이벤트 생성`
 
 ## 랜덤 생성 규칙
 
